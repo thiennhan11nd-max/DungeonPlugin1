@@ -1,0 +1,7 @@
+name: DungeonPlugin
+version: 1.0
+main: com.dungeon.DungeonPlugin
+api-version: '1.21'
+commands:
+  dungeon:
+    usage: /dungeon <create|join|leave>
