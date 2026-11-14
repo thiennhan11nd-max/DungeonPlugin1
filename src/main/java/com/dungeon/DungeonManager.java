@@ -119,12 +119,63 @@ public class DungeonManager implements Listener {
         p.sendMessage("§e§lCONG: §aXanh la = Dungeon sau §e| Vang = Dungeon truoc §c| Do = Thoat");
         p.sendMessage("§6Giet Boss cang nhanh cang len TOP! /dungeon top");
     }
+
     public void leaveDungeon(Player p) {
         inDungeon.remove(p.getUniqueId());
         currentDungeon.remove(p.getUniqueId());
         startTimes.remove(p.getUniqueId());
         if (lobby != null) p.teleport(lobby);
         p.sendMessage("§eDa roi khoi Dungeon.");
+    }
+
+    // ===== XOA DUNGEON CU =====
+    public void deleteDungeon(Player p, int id) {
+        if (id == -1) {
+            for (int i = 1; i <= 4; i++) deleteOne(p, i);
+            p.sendMessage("§aDa xoa het tat ca Dungeon!");
+            return;
+        }
+        if (!spawns.containsKey(id)) {
+            p.sendMessage("§cDungeon " + id + " chua co, khong co gi de xoa!");
+            return;
+        }
+        deleteOne(p, id);
+        p.sendMessage("§aDa xoa Dungeon " + id + "!");
+    }
+
+    private void deleteOne(Player p, int id) {
+        Location spawn = spawns.get(id);
+        if (spawn == null) return;
+        World w = spawn.getWorld();
+        int startX = spawn.getBlockX() - 2;
+        int startZ = spawn.getBlockZ() - 2;
+        int y = 60;
+        int SIZE = 5 * 9 + 1;
+        for (int dx = -2; dx < SIZE + 2; dx++) for (int dz = -2; dz < SIZE + 2; dz++) {
+            for (int h = 0; h <= 5; h++) {
+                w.getBlockAt(startX + dx, y + h, startZ + dz).setType(Material.AIR);
+            }
+        }
+        if (bosses.containsKey(id)) {
+            LivingEntity boss = bosses.get(id);
+            if (boss != null && !boss.isDead()) boss.remove();
+            bosses.remove(id);
+        }
+        bossCenters.remove(id);
+        bossRespawnAt.remove(id);
+        for (Entity e : w.getNearbyEntities(spawn, 80, 10, 80)) {
+            if (e instanceof Mob mob && mob.getCustomName() != null && (mob.getCustomName().contains("Linh") || mob.getCustomName().contains("BOSS"))) {
+                mob.remove();
+            }
+        }
+        mobSpawns.remove(id);
+        spawns.remove(id);
+        for (Player pl : new ArrayList<>(Bukkit.getOnlinePlayers())) {
+            if (currentDungeon.containsKey(pl.getUniqueId()) && currentDungeon.get(pl.getUniqueId()) == id) {
+                leaveDungeon(pl);
+                pl.sendMessage("§cDungeon " + id + " da bi xoa boi Admin!");
+            }
+        }
     }
 
     private String bossName(int id) {
@@ -150,7 +201,6 @@ public class DungeonManager implements Listener {
     private Material floorMat(int id) { return switch(id){ case 1->Material.TUFF_BRICKS; case 2->Material.NETHERRACK; case 3->Material.PRISMARINE_BRICKS; case 4->Material.DEEPSLATE_TILES; default->Material.STONE_BRICKS; }; }
     private Material wallMat(int id) { return switch(id){ case 1->Material.TUFF_BRICKS; case 2->Material.NETHER_BRICKS; case 3->Material.DARK_PRISMARINE; case 4->Material.OBSIDIAN; default->Material.STONE_BRICKS; }; }
 
-    // ===== ME CUNG: DFS - TAT CA PHONG DEU THONG NHAU =====
     private void buildMaze(World world, int startX, int y, int startZ, int id) {
         int N = 5;
         int CELL = 9;
@@ -435,7 +485,6 @@ public class DungeonManager implements Listener {
         }
     }
 
-    // ===== CHONG PHA ME CUNG - FULL COMBO =====
     @EventHandler
     public void onBlockBreak(BlockBreakEvent e) {
         Player p = e.getPlayer();
@@ -509,4 +558,4 @@ public class DungeonManager implements Listener {
     }
 
     @EventHandler public void onQuit(PlayerQuitEvent e){ inDungeon.remove(e.getPlayer().getUniqueId()); currentDungeon.remove(e.getPlayer().getUniqueId()); startTimes.remove(e.getPlayer().getUniqueId()); }
-        }
+                              }
