@@ -128,7 +128,6 @@ public class DungeonManager implements Listener {
         p.sendMessage("§eDa roi khoi Dungeon.");
     }
 
-    // ===== XOA DUNGEON CU =====
     public void deleteDungeon(Player p, int id) {
         if (id == -1) {
             for (int i = 1; i <= 4; i++) deleteOne(p, i);
@@ -202,9 +201,7 @@ public class DungeonManager implements Listener {
     private Material wallMat(int id) { return switch(id){ case 1->Material.TUFF_BRICKS; case 2->Material.NETHER_BRICKS; case 3->Material.DARK_PRISMARINE; case 4->Material.OBSIDIAN; default->Material.STONE_BRICKS; }; }
 
     private void buildMaze(World world, int startX, int y, int startZ, int id) {
-        int N = 5;
-        int CELL = 9;
-        int SIZE = N * CELL + 1;
+        int N = 5; int CELL = 9; int SIZE = N * CELL + 1;
         Material floor = floorMat(id); Material wall = wallMat(id);
         for (int dx = 0; dx < SIZE; dx++) for (int dz = 0; dz < SIZE; dz++) {
             world.getBlockAt(startX+dx, y, startZ+dz).setType(floor);
@@ -223,94 +220,50 @@ public class DungeonManager implements Listener {
         Random rnd = new Random(id * 12345L + System.currentTimeMillis()%1000);
         int[][] dirs = {{-1,0},{1,0},{0,-1},{0,1}};
         while(!st.isEmpty()){
-            int[] cur = st.peek();
-            int r=cur[0], c=cur[1];
+            int[] cur = st.peek(); int r=cur[0], c=cur[1];
             List<int[]> nei = new ArrayList<>();
-            for(int[] d: dirs){
-                int nr=r+d[0], nc=c+d[1];
-                if(nr>=0&&nr<N&&nc>=0&&nc<N&&!visited[nr][nc]) nei.add(new int[]{nr,nc});
-            }
+            for(int[] d: dirs){ int nr=r+d[0], nc=c+d[1]; if(nr>=0&&nr<N&&nc>=0&&nc<N&&!visited[nr][nc]) nei.add(new int[]{nr,nc}); }
             if(nei.isEmpty()){ st.pop(); continue; }
-            int[] next = nei.get(rnd.nextInt(nei.size()));
-            int nr=next[0], nc=next[1];
-            if(nr==r-1) wallH[r][c]=false;
-            if(nr==r+1) wallH[r+1][c]=false;
-            if(nc==c-1) wallV[r][c]=false;
-            if(nc==c+1) wallV[r][c+1]=false;
-            visited[nr][nc]=true;
-            st.push(next);
+            int[] next = nei.get(rnd.nextInt(nei.size())); int nr=next[0], nc=next[1];
+            if(nr==r-1) wallH[r][c]=false; if(nr==r+1) wallH[r+1][c]=false;
+            if(nc==c-1) wallV[r][c]=false; if(nc==c+1) wallV[r][c+1]=false;
+            visited[nr][nc]=true; st.push(next);
         }
         for(int r=0;r<N;r++) for(int c=0;c<N;c++){
-            int cellX = startX + c*CELL;
-            int cellZ = startZ + r*CELL;
-            for(int dx=1;dx<CELL;dx++) for(int dz=1;dz<CELL;dz++){
-                for(int h=1;h<=3;h++) world.getBlockAt(cellX+dx, y+h, cellZ+dz).setType(Material.AIR);
-            }
-            if(!wallH[r][c]){
-                for(int w=3;w<=5;w++) for(int h=1;h<=3;h++) world.getBlockAt(cellX+w, y+h, cellZ).setType(Material.AIR);
-            }
-            if(!wallH[r+1][c]){
-                for(int w=3;w<=5;w++) for(int h=1;h<=3;h++) world.getBlockAt(cellX+w, y+h, cellZ+CELL).setType(Material.AIR);
-            }
-            if(!wallV[r][c]){
-                for(int w=3;w<=5;w++) for(int h=1;h<=3;h++) world.getBlockAt(cellX, y+h, cellZ+w).setType(Material.AIR);
-            }
-            if(!wallV[r][c+1]){
-                for(int w=3;w<=5;w++) for(int h=1;h<=3;h++) world.getBlockAt(cellX+CELL, y+h, cellZ+w).setType(Material.AIR);
-            }
-            if(r==0 && c==0){
-                for(int w=3;w<=5;w++) for(int h=1;h<=3;h++) world.getBlockAt(cellX, y+h, cellZ+w).setType(Material.AIR);
-            }
+            int cellX = startX + c*CELL; int cellZ = startZ + r*CELL;
+            for(int dx=1;dx<CELL;dx++) for(int dz=1;dz<CELL;dz++) for(int h=1;h<=3;h++) world.getBlockAt(cellX+dx, y+h, cellZ+dz).setType(Material.AIR);
+            if(!wallH[r][c]) for(int w=3;w<=5;w++) for(int h=1;h<=3;h++) world.getBlockAt(cellX+w, y+h, cellZ).setType(Material.AIR);
+            if(!wallH[r+1][c]) for(int w=3;w<=5;w++) for(int h=1;h<=3;h++) world.getBlockAt(cellX+w, y+h, cellZ+CELL).setType(Material.AIR);
+            if(!wallV[r][c]) for(int w=3;w<=5;w++) for(int h=1;h<=3;h++) world.getBlockAt(cellX, y+h, cellZ+w).setType(Material.AIR);
+            if(!wallV[r][c+1]) for(int w=3;w<=5;w++) for(int h=1;h<=3;h++) world.getBlockAt(cellX+CELL, y+h, cellZ+w).setType(Material.AIR);
+            if(r==0 && c==0) for(int w=3;w<=5;w++) for(int h=1;h<=3;h++) world.getBlockAt(cellX, y+h, cellZ+w).setType(Material.AIR);
         }
         for(int r=0;r<N;r++) for(int c=0;c<N;c++){
             if((r==0&&c==0)||(r==N-1&&c==N-1)) continue;
-            int cellX = startX + c*CELL;
-            int cellZ = startZ + r*CELL;
+            int cellX = startX + c*CELL; int cellZ = startZ + r*CELL;
             Location s = new Location(world, cellX+5, y+1, cellZ+5);
             mobSpawns.computeIfAbsent(id, k -> new ArrayList<>()).add(s);
             spawnMazeMob(world, s, id);
-            if(rnd.nextBoolean()){
-                Location s2 = new Location(world, cellX+2, y+1, cellZ+2);
-                spawnMazeMob(world, s2, id);
-            }
+            if(rnd.nextBoolean()){ Location s2 = new Location(world, cellX+2, y+1, cellZ+2); spawnMazeMob(world, s2, id); }
         }
-        int bossCellX = startX + (N-1)*CELL;
-        int bossCellZ = startZ + (N-1)*CELL;
+        int bossCellX = startX + (N-1)*CELL; int bossCellZ = startZ + (N-1)*CELL;
         for(int dx=1;dx<CELL;dx++) for(int dz=1;dz<CELL;dz++) for(int h=1;h<=3;h++) world.getBlockAt(bossCellX+dx, y+h, bossCellZ+dz).setType(Material.AIR);
         Location center = new Location(world, bossCellX+5, y+1, bossCellZ+5);
         bossCenters.put(id, center);
         world.getBlockAt(bossCellX+5, y, bossCellZ+5).setType(Material.GOLD_BLOCK);
         Entity e = world.spawnEntity(center, bossType(id));
-        if(e instanceof LivingEntity le){
-            le.setPersistent(true); le.setRemoveWhenFarAway(false);
-            le.setCustomName(bossName(id)); le.setCustomNameVisible(true);
-            le.setMaxHealth(bossHp(id)); le.setHealth(bossHp(id));
-            bosses.put(id, le);
-        }
+        if(e instanceof LivingEntity le){ le.setPersistent(true); le.setRemoveWhenFarAway(false); le.setCustomName(bossName(id)); le.setCustomNameVisible(true); le.setMaxHealth(bossHp(id)); le.setHealth(bossHp(id)); bosses.put(id, le); }
         world.getBlockAt(bossCellX+7, y+1, bossCellZ+7).setType(Material.CHEST);
         Chest chest = (Chest) world.getBlockAt(bossCellX+7, y+1, bossCellZ+7).getState();
-        chest.getInventory().addItem(getLoot(id));
-        chest.update();
+        chest.getInventory().addItem(getLoot(id)); chest.update();
     }
 
     private void spawnMazeMob(World world, Location s, int id){
         switch(id){
-            case 1 -> {
-                EntityType[] t = {EntityType.BOGGED, EntityType.BREEZE, EntityType.SKELETON};
-                spawnMob(world, s, t[new Random().nextInt(t.length)], "§aLinh Dungeon 1", 30);
-            }
-            case 2 -> {
-                EntityType[] t = {EntityType.BLAZE, EntityType.PIGLIN_BRUTE, EntityType.MAGMA_CUBE};
-                spawnMob(world, s, t[new Random().nextInt(t.length)], "§cLinh Dungeon 2", 40);
-            }
-            case 3 -> {
-                EntityType[] t = {EntityType.DROWNED, EntityType.GUARDIAN, EntityType.ELDER_GUARDIAN};
-                spawnMob(world, s, t[new Random().nextInt(t.length)], "§9Linh Dungeon 3", 50);
-            }
-            case 4 -> {
-                EntityType[] t = {EntityType.WITHER_SKELETON, EntityType.ENDERMAN, EntityType.WARDEN};
-                spawnMob(world, s, t[new Random().nextInt(t.length)], "§5Linh Dungeon 4", 60);
-            }
+            case 1 -> { EntityType[] t = {EntityType.BOGGED, EntityType.BREEZE, EntityType.SKELETON}; spawnMob(world, s, t[new Random().nextInt(t.length)], "§aLinh Dungeon 1", 30); }
+            case 2 -> { EntityType[] t = {EntityType.BLAZE, EntityType.PIGLIN_BRUTE, EntityType.MAGMA_CUBE}; spawnMob(world, s, t[new Random().nextInt(t.length)], "§cLinh Dungeon 2", 40); }
+            case 3 -> { EntityType[] t = {EntityType.DROWNED, EntityType.GUARDIAN, EntityType.ELDER_GUARDIAN}; spawnMob(world, s, t[new Random().nextInt(t.length)], "§9Linh Dungeon 3", 50); }
+            case 4 -> { EntityType[] t = {EntityType.WITHER_SKELETON, EntityType.ENDERMAN, EntityType.WARDEN}; spawnMob(world, s, t[new Random().nextInt(t.length)], "§5Linh Dungeon 4", 60); }
         }
     }
 
@@ -364,16 +317,7 @@ public class DungeonManager implements Listener {
                         if(s==0){ Bukkit.broadcastMessage("§5§lBOSS 4: DAU WITHER!"); for(int i=0;i<3;i++){ WitherSkull sk=(WitherSkull)world.spawnEntity(bl.clone().add(0,2,0),EntityType.WITHER_SKULL); Vector dir=target.getLocation().toVector().subtract(bl.toVector()).normalize(); sk.setVelocity(dir.multiply(1.5)); } }
                         else if(s==1){ Bukkit.broadcastMessage("§d§lBOSS 4: HUT MAU!"); for(Player p:targets){ p.damage(5); boss.setHealth(Math.min(boss.getMaxHealth(), boss.getHealth()+10)); } }
                         else if(s==2){ Bukkit.broadcastMessage("§8§lBOSS 4: GOI LINH BONG TOI!"); spawnMob(world,bl.clone().add(3,0,0),EntityType.WITHER_SKELETON,"§5Linh Toi",60); spawnMob(world,bl.clone().add(-3,0,0),EntityType.ENDERMAN,"§5Linh Toi",60); }
-                        else {
-                            Bukkit.broadcastMessage("§5§lBOSS 4: TANG HINH! Tim ta di!");
-                            boss.addPotionEffect(new org.bukkit.potion.PotionEffect(org.bukkit.potion.PotionEffectType.INVISIBILITY, 100, 1));
-                            Location behind = target.getLocation().add(target.getLocation().getDirection().multiply(-3));
-                            behind.setY(target.getLocation().getY());
-                            boss.teleport(behind);
-                            world.spawnParticle(Particle.SMOKE, bl, 40, 1,1,1, 0.3);
-                            world.playSound(bl, Sound.ENTITY_ENDERMAN_TELEPORT, 2, 1);
-                            new BukkitRunnable(){ @Override public void run(){ if(!boss.isDead()){ boss.removePotionEffect(org.bukkit.potion.PotionEffectType.INVISIBILITY); Bukkit.broadcastMessage("§5§lBOSS 4: TA O DAY NAY!"); world.spawnParticle(Particle.SOUL, boss.getLocation(), 30, 1,1,1, 0.3); } } }.runTaskLater(plugin, 100L);
-                        }
+                        else { Bukkit.broadcastMessage("§5§lBOSS 4: TANG HINH! Tim ta di!"); boss.addPotionEffect(new org.bukkit.potion.PotionEffect(org.bukkit.potion.PotionEffectType.INVISIBILITY, 100, 1)); Location behind = target.getLocation().add(target.getLocation().getDirection().multiply(-3)); behind.setY(target.getLocation().getY()); boss.teleport(behind); world.spawnParticle(Particle.SMOKE, bl, 40, 1,1,1, 0.3); world.playSound(bl, Sound.ENTITY_ENDERMAN_TELEPORT, 2, 1); new BukkitRunnable(){ @Override public void run(){ if(!boss.isDead()){ boss.removePotionEffect(org.bukkit.potion.PotionEffectType.INVISIBILITY); Bukkit.broadcastMessage("§5§lBOSS 4: TA O DAY NAY!"); world.spawnParticle(Particle.SOUL, boss.getLocation(), 30, 1,1,1, 0.3); } } }.runTaskLater(plugin, 100L); }
                     }
                 }
                 if(enraged) Bukkit.broadcastMessage("§4§lBOSS DANG NOI GIAN!");
@@ -391,37 +335,20 @@ public class DungeonManager implements Listener {
                         Location center = bossCenters.get(id);
                         if (center != null) {
                             Entity e = center.getWorld().spawnEntity(center, bossType(id));
-                            if (e instanceof LivingEntity le) {
-                                le.setPersistent(true); le.setRemoveWhenFarAway(false);
-                                le.setCustomName(bossName(id)); le.setCustomNameVisible(true);
-                                le.setMaxHealth(bossHp(id)); le.setHealth(bossHp(id));
-                                bosses.put(id, le);
-                                Bukkit.broadcastMessage("§c§lBOSS " + id + " DA HOI SINH! Mau vao danh!");
-                                startBossSkills(id);
-                            }
+                            if (e instanceof LivingEntity le) { le.setPersistent(true); le.setRemoveWhenFarAway(false); le.setCustomName(bossName(id)); le.setCustomNameVisible(true); le.setMaxHealth(bossHp(id)); le.setHealth(bossHp(id)); bosses.put(id, le); Bukkit.broadcastMessage("§c§lBOSS " + id + " DA HOI SINH! Mau vao danh!"); startBossSkills(id); }
                             bossRespawnAt.remove(id);
                         }
                     }
                 }
                 World w = spawns.get(id).getWorld();
-                long alive = w.getNearbyEntities(spawns.get(id), 80, 10, 80).stream()
-                    .filter(en -> en instanceof Mob && en.getCustomName() != null && en.getCustomName().contains("Linh"))
-                    .count();
-                if (alive < 5) {
-                    List<Location> locs = mobSpawns.get(id);
-                    if (locs != null && !locs.isEmpty()) {
-                        Location s = locs.get(new Random().nextInt(locs.size()));
-                        spawnMazeMob(w, s, id);
-                    }
-                }
+                long alive = w.getNearbyEntities(spawns.get(id), 80, 10, 80).stream().filter(en -> en instanceof Mob && en.getCustomName() != null && en.getCustomName().contains("Linh")).count();
+                if (alive < 5) { List<Location> locs = mobSpawns.get(id); if (locs != null && !locs.isEmpty()) { Location s = locs.get(new Random().nextInt(locs.size())); spawnMazeMob(w, s, id); } }
             }
         }.runTaskTimer(plugin, 20L, 20L);
     }
 
     private void tryDrop(World w, Location loc, Material mat, int amount, int chance) {
-        if (new Random().nextInt(100) < chance) {
-            w.dropItemNaturally(loc, new ItemStack(mat, amount));
-        }
+        if (new Random().nextInt(100) < chance) w.dropItemNaturally(loc, new ItemStack(mat, amount));
     }
 
     @EventHandler
@@ -437,125 +364,30 @@ public class DungeonManager implements Listener {
                 bossRespawnAt.put(id, System.currentTimeMillis() + 60000);
                 Bukkit.broadcastMessage("§eBoss " + id + " se hoi sinh sau 60s!");
                 switch(id){
-                    case 1 -> {
-                        tryDrop(w, loc, Material.MACE, 1, 5);
-                        tryDrop(w, loc, Material.WIND_CHARGE, 8, 30);
-                        tryDrop(w, loc, Material.DIAMOND, 3, 30);
-                        tryDrop(w, loc, Material.GOLDEN_APPLE, 1, 30);
-                        tryDrop(w, loc, Material.TOTEM_OF_UNDYING, 1, 10);
-                    }
-                    case 2 -> {
-                        tryDrop(w, loc, Material.NETHERITE_SWORD, 1, 8);
-                        tryDrop(w, loc, Material.FIRE_CHARGE, 8, 30);
-                        tryDrop(w, loc, Material.NETHERITE_INGOT, 1, 10);
-                        tryDrop(w, loc, Material.GOLDEN_APPLE, 1, 30);
-                        tryDrop(w, loc, Material.BLAZE_ROD, 4, 30);
-                        tryDrop(w, loc, Material.TOTEM_OF_UNDYING, 1, 10);
-                    }
-                    case 3 -> {
-                        tryDrop(w, loc, Material.TRIDENT, 1, 5);
-                        tryDrop(w, loc, Material.HEART_OF_THE_SEA, 1, 10);
-                        tryDrop(w, loc, Material.DIAMOND, 4, 30);
-                        tryDrop(w, loc, Material.ENCHANTED_GOLDEN_APPLE, 1, 10);
-                        tryDrop(w, loc, Material.NAUTILUS_SHELL, 1, 30);
-                        tryDrop(w, loc, Material.TOTEM_OF_UNDYING, 1, 10);
-                    }
-                    case 4 -> {
-                        tryDrop(w, loc, Material.NETHER_STAR, 1, 5);
-                        tryDrop(w, loc, Material.NETHERITE_CHESTPLATE, 1, 8);
-                        tryDrop(w, loc, Material.NETHERITE_SWORD, 1, 8);
-                        tryDrop(w, loc, Material.TOTEM_OF_UNDYING, 1, 10);
-                        tryDrop(w, loc, Material.ENCHANTED_GOLDEN_APPLE, 1, 10);
-                    }
+                    case 1 -> { for(int i=0;i<2 + new Random().nextInt(3);i++) w.dropItemNaturally(loc, DungeonCraft.material(1)); tryDrop(w, loc, Material.MACE, 1, 5); tryDrop(w, loc, Material.DIAMOND, 3, 30); tryDrop(w, loc, Material.TOTEM_OF_UNDYING, 1, 10); }
+                    case 2 -> { for(int i=0;i<2 + new Random().nextInt(3);i++) w.dropItemNaturally(loc, DungeonCraft.material(2)); tryDrop(w, loc, Material.NETHERITE_SWORD, 1, 8); tryDrop(w, loc, Material.NETHERITE_INGOT, 1, 10); tryDrop(w, loc, Material.TOTEM_OF_UNDYING, 1, 10); }
+                    case 3 -> { for(int i=0;i<2 + new Random().nextInt(3);i++) w.dropItemNaturally(loc, DungeonCraft.material(3)); tryDrop(w, loc, Material.TRIDENT, 1, 5); tryDrop(w, loc, Material.HEART_OF_THE_SEA, 1, 10); tryDrop(w, loc, Material.TOTEM_OF_UNDYING, 1, 10); }
+                    case 4 -> { for(int i=0;i<3 + new Random().nextInt(3);i++) w.dropItemNaturally(loc, DungeonCraft.material(4)); tryDrop(w, loc, Material.NETHER_STAR, 1, 5); tryDrop(w, loc, Material.NETHERITE_CHESTPLATE, 1, 8); tryDrop(w, loc, Material.TOTEM_OF_UNDYING, 1, 10); }
                 }
                 for(Player p : w.getPlayers()){
                     if(inDungeon.contains(p.getUniqueId()) && currentDungeon.get(p.getUniqueId())!=null && currentDungeon.get(p.getUniqueId())==id && startTimes.containsKey(p.getUniqueId())){
                         long secs = (System.currentTimeMillis() - startTimes.get(p.getUniqueId()))/1000;
                         String name = p.getName();
-                        if(!bestTimes.containsKey(name) || secs < bestTimes.get(name)){
-                            bestTimes.put(name, secs);
-                            bestDungeon.put(name, id);
-                            Bukkit.broadcastMessage("§6§lKY LUC MOI! " + name + " giet Boss " + id + " trong " + secs + "s!");
-                        } else {
-                            p.sendMessage("§eBan giet Boss " + id + " trong " + secs + "s. Ky luc cua ban: " + bestTimes.get(name) + "s");
-                        }
+                        if(!bestTimes.containsKey(name) || secs < bestTimes.get(name)){ bestTimes.put(name, secs); bestDungeon.put(name, id); Bukkit.broadcastMessage("§6§lKY LUC MOI! " + name + " giet Boss " + id + " trong " + secs + "s!"); }
+                        else { p.sendMessage("§eBan giet Boss " + id + " trong " + secs + "s. Ky luc cua ban: " + bestTimes.get(name) + "s"); }
                     }
                 }
             }
         }
     }
 
-    @EventHandler
-    public void onBlockBreak(BlockBreakEvent e) {
-        Player p = e.getPlayer();
-        if (inDungeon.contains(p.getUniqueId())) {
-            e.setCancelled(true);
-            p.sendMessage("§c§lCAM DAP BLOCK TRONG DUNGEON!");
-        }
+    @EventHandler public void onBlockBreak(BlockBreakEvent e) { Player p = e.getPlayer(); if (inDungeon.contains(p.getUniqueId())) { e.setCancelled(true); p.sendMessage("§c§lCAM DAP BLOCK TRONG DUNGEON!"); } }
+    @EventHandler public void onBlockPlace(BlockPlaceEvent e) { Player p = e.getPlayer(); if (inDungeon.contains(p.getUniqueId())) { e.setCancelled(true); p.sendMessage("§c§lCAM DAT BLOCK TRONG DUNGEON!"); } }
+    @EventHandler public void onExplode(EntityExplodeEvent e) { for (Location spawn : spawns.values()) { if (spawn != null && spawn.getWorld().equals(e.getLocation().getWorld())) { if (spawn.distance(e.getLocation()) < 100) { e.setCancelled(true); e.blockList().clear(); return; } } } }
+    @EventHandler public void onCreeperDamage(EntityDamageByEntityEvent e) { if (e.getDamager() instanceof Creeper) { for (Location spawn : spawns.values()) { if (spawn != null && spawn.getWorld().equals(e.getEntity().getWorld())) { if (spawn.distance(e.getEntity().getLocation()) < 100) return; } } } }
+    @EventHandler public void onWitherBreakBlock(EntityChangeBlockEvent e) {
+        if (e.getEntityType() == EntityType.WITHER || e.getEntityType() == EntityType.WITHER_SKULL) { e.setCancelled(true); return; }
+        if (e.getEntity() instanceof Mob) { for (Location spawn : spawns.values()) { if (spawn != null && spawn.getWorld().equals(e.getBlock().getWorld())) { if (spawn.distance(e.getBlock().getLocation()) < 100) { e.setCancelled(true); return; } } } }
     }
-
-    @EventHandler
-    public void onBlockPlace(BlockPlaceEvent e) {
-        Player p = e.getPlayer();
-        if (inDungeon.contains(p.getUniqueId())) {
-            e.setCancelled(true);
-            p.sendMessage("§c§lCAM DAT BLOCK TRONG DUNGEON!");
-        }
-    }
-
-    @EventHandler
-    public void onExplode(EntityExplodeEvent e) {
-        for (Location spawn : spawns.values()) {
-            if (spawn != null && spawn.getWorld().equals(e.getLocation().getWorld())) {
-                if (spawn.distance(e.getLocation()) < 100) {
-                    e.setCancelled(true);
-                    e.blockList().clear();
-                    return;
-                }
-            }
-        }
-    }
-
-    @EventHandler
-    public void onCreeperDamage(EntityDamageByEntityEvent e) {
-        if (e.getDamager() instanceof Creeper) {
-            for (Location spawn : spawns.values()) {
-                if (spawn != null && spawn.getWorld().equals(e.getEntity().getWorld())) {
-                    if (spawn.distance(e.getEntity().getLocation()) < 100) {
-                        return;
-                    }
-                }
-            }
-        }
-    }
-
-    @EventHandler
-    public void onWitherBreakBlock(EntityChangeBlockEvent e) {
-        if (e.getEntityType() == EntityType.WITHER || e.getEntityType() == EntityType.WITHER_SKULL) {
-            e.setCancelled(true);
-            return;
-        }
-        if (e.getEntityType() == EntityType.ENDERMAN) {
-            for (Location spawn : spawns.values()) {
-                if (spawn != null && spawn.getWorld().equals(e.getBlock().getWorld())) {
-                    if (spawn.distance(e.getBlock().getLocation()) < 100) {
-                        e.setCancelled(true);
-                        return;
-                    }
-                }
-            }
-        }
-        if (e.getEntity() instanceof Mob) {
-            for (Location spawn : spawns.values()) {
-                if (spawn != null && spawn.getWorld().equals(e.getBlock().getWorld())) {
-                    if (spawn.distance(e.getBlock().getLocation()) < 100) {
-                        e.setCancelled(true);
-                        return;
-                    }
-                }
-            }
-        }
-    }
-
     @EventHandler public void onQuit(PlayerQuitEvent e){ inDungeon.remove(e.getPlayer().getUniqueId()); currentDungeon.remove(e.getPlayer().getUniqueId()); startTimes.remove(e.getPlayer().getUniqueId()); }
-                              }
+                                        }
