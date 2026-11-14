@@ -8,9 +8,7 @@ import org.bukkit.entity.Player;
 public class DungeonCommand implements CommandExecutor {
     private final DungeonManager manager;
     public DungeonCommand(DungeonManager manager) { this.manager = manager; }
-
-    @Override
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+    @Override public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (!(sender instanceof Player p)) { sender.sendMessage("Chi nguoi choi moi dung duoc!"); return true; }
         if (args.length == 0) {
             p.sendMessage("§6§l=== DUNGEON ===");
@@ -30,18 +28,10 @@ public class DungeonCommand implements CommandExecutor {
             if (!p.isOp()) { p.sendMessage("§cChi OP moi duoc xoa Dungeon!"); return true; }
             if (args.length < 2) { p.sendMessage("§cDung: /dungeon delete 1 / 2 / 3 / 4 / all"); return true; }
             if (args[1].equalsIgnoreCase("all")) { manager.deleteDungeon(p, -1); return true; }
-            try {
-                int id = Integer.parseInt(args[1]);
-                manager.deleteDungeon(p, id);
-            } catch (NumberFormatException e) { p.sendMessage("§cDung: /dungeon delete 1"); }
+            try { int id = Integer.parseInt(args[1]); manager.deleteDungeon(p, id); } catch (NumberFormatException e) { p.sendMessage("§cDung: /dungeon delete 1"); }
             return true;
         }
-        try {
-            int id = Integer.parseInt(a);
-            manager.joinDungeon(p, id);
-        } catch (NumberFormatException e) {
-            p.sendMessage("§cDung: /dungeon 1");
-        }
+        try { int id = Integer.parseInt(a); manager.joinDungeon(p, id); } catch (NumberFormatException e) { p.sendMessage("§cDung: /dungeon 1"); }
         return true;
     }
 }
