@@ -5,7 +5,12 @@ import org.bukkit.block.Chest;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
@@ -66,7 +71,6 @@ public class DungeonManager implements Listener {
         Location base = new Location(world, p.getLocation().getX() + 100 + (id-1)*400, 60, p.getLocation().getZ());
         Location spawn = base.clone().add(2, 1, 2);
         spawns.put(id, spawn);
-        // ===== TAO ME CUNG =====
         buildMaze(world, base.getBlockX(), 60, base.getBlockZ(), id);
         buildPortalPads(world, spawn, id);
         p.sendMessage("§aDa tao Me Cung Dungeon " + id + "!");
@@ -148,11 +152,10 @@ public class DungeonManager implements Listener {
 
     // ===== ME CUNG: DFS - TAT CA PHONG DEU THONG NHAU =====
     private void buildMaze(World world, int startX, int y, int startZ, int id) {
-        int N = 5; // 5x5 o
-        int CELL = 9; // moi o 9x9 block
+        int N = 5;
+        int CELL = 9;
         int SIZE = N * CELL + 1;
         Material floor = floorMat(id); Material wall = wallMat(id);
-        // 1. Lap day san + tuong
         for (int dx = 0; dx < SIZE; dx++) for (int dz = 0; dz < SIZE; dz++) {
             world.getBlockAt(startX+dx, y, startZ+dz).setType(floor);
             world.getBlockAt(startX+dx, y+4, startZ+dz).setType(wall);
@@ -160,14 +163,11 @@ public class DungeonManager implements Listener {
             world.getBlockAt(startX+dx, y+2, startZ+dz).setType(wall);
             world.getBlockAt(startX+dx, y+3, startZ+dz).setType(wall);
         }
-        // 2. Tao me cung bang DFS - dam bao 100% thong nhau
         boolean[][] visited = new boolean[N][N];
-        // wallH[row][col] = tuong ngang, wallV[row][col] = tuong doc
-        boolean[][] wallH = new boolean[N+1][N]; // wallH[r][c] la tuong giua (r-1,c) va (r,c)
+        boolean[][] wallH = new boolean[N+1][N];
         boolean[][] wallV = new boolean[N][N+1];
         for (int i=0;i<=N;i++) for(int j=0;j<N;j++) wallH[i][j]=true;
         for (int i=0;i<N;i++) for(int j=0;j<=N;j++) wallV[i][j]=true;
-        // DFS
         Stack<int[]> st = new Stack<>();
         st.push(new int[]{0,0}); visited[0][0]=true;
         Random rnd = new Random(id * 12345L + System.currentTimeMillis()%1000);
@@ -183,7 +183,6 @@ public class DungeonManager implements Listener {
             if(nei.isEmpty()){ st.pop(); continue; }
             int[] next = nei.get(rnd.nextInt(nei.size()));
             int nr=next[0], nc=next[1];
-            // pha tuong giua cur va next
             if(nr==r-1) wallH[r][c]=false;
             if(nr==r+1) wallH[r+1][c]=false;
             if(nc==c-1) wallV[r][c]=false;
@@ -191,60 +190,45 @@ public class DungeonManager implements Listener {
             visited[nr][nc]=true;
             st.push(next);
         }
-        // 3. Duc tuong theo me cung - moi o 9x9, tuong day 1 block, cua rong 3 block
         for(int r=0;r<N;r++) for(int c=0;c<N;c++){
             int cellX = startX + c*CELL;
             int cellZ = startZ + r*CELL;
-            // Duc san trong o thanh AIR (thong)
             for(int dx=1;dx<CELL;dx++) for(int dz=1;dz<CELL;dz++){
                 for(int h=1;h<=3;h++) world.getBlockAt(cellX+dx, y+h, cellZ+dz).setType(Material.AIR);
             }
-            // Duc cua: neu khong co tuong thi mo cua 3 block
-            // Tuong tren (Bac)
             if(!wallH[r][c]){
                 for(int w=3;w<=5;w++) for(int h=1;h<=3;h++) world.getBlockAt(cellX+w, y+h, cellZ).setType(Material.AIR);
             }
-            // Tuong duoi (Nam)
             if(!wallH[r+1][c]){
                 for(int w=3;w<=5;w++) for(int h=1;h<=3;h++) world.getBlockAt(cellX+w, y+h, cellZ+CELL).setType(Material.AIR);
             }
-            // Tuong trai (Tay)
             if(!wallV[r][c]){
                 for(int w=3;w<=5;w++) for(int h=1;h<=3;h++) world.getBlockAt(cellX, y+h, cellZ+w).setType(Material.AIR);
             }
-            // Tuong phai (Dong)
             if(!wallV[r][c+1]){
                 for(int w=3;w<=5;w++) for(int h=1;h<=3;h++) world.getBlockAt(cellX+CELL, y+h, cellZ+w).setType(Material.AIR);
             }
-            // Cua vao me cung o o (0,0) - phia Tay
             if(r==0 && c==0){
                 for(int w=3;w<=5;w++) for(int h=1;h<=3;h++) world.getBlockAt(cellX, y+h, cellZ+w).setType(Material.AIR);
             }
         }
-        // 4. Spawn quai rac khap me cung - moi o 1-2 con
         for(int r=0;r<N;r++) for(int c=0;c<N;c++){
-            // Bo qua o spawn (0,0) va o Boss (4,4)
             if((r==0&&c==0)||(r==N-1&&c==N-1)) continue;
             int cellX = startX + c*CELL;
             int cellZ = startZ + r*CELL;
             Location s = new Location(world, cellX+5, y+1, cellZ+5);
             mobSpawns.computeIfAbsent(id, k -> new ArrayList<>()).add(s);
             spawnMazeMob(world, s, id);
-            // Them 1 con nua o goc de me cung dong
             if(rnd.nextBoolean()){
                 Location s2 = new Location(world, cellX+2, y+1, cellZ+2);
                 spawnMazeMob(world, s2, id);
             }
         }
-        // 5. Phong Boss o cuoi me cung (4,4) - rong hon
         int bossCellX = startX + (N-1)*CELL;
         int bossCellZ = startZ + (N-1)*CELL;
-        // Mo rong phong Boss: pha tuong trong o Boss
         for(int dx=1;dx<CELL;dx++) for(int dz=1;dz<CELL;dz++) for(int h=1;h<=3;h++) world.getBlockAt(bossCellX+dx, y+h, bossCellZ+dz).setType(Material.AIR);
-        // Dat Boss + Ruong
         Location center = new Location(world, bossCellX+5, y+1, bossCellZ+5);
         bossCenters.put(id, center);
-        // Danh dau ruong + duong den Boss bang block vang de de tim
         world.getBlockAt(bossCellX+5, y, bossCellZ+5).setType(Material.GOLD_BLOCK);
         Entity e = world.spawnEntity(center, bossType(id));
         if(e instanceof LivingEntity le){
@@ -450,5 +434,79 @@ public class DungeonManager implements Listener {
             }
         }
     }
+
+    // ===== CHONG PHA ME CUNG - FULL COMBO =====
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent e) {
+        Player p = e.getPlayer();
+        if (inDungeon.contains(p.getUniqueId())) {
+            e.setCancelled(true);
+            p.sendMessage("§c§lCAM DAP BLOCK TRONG DUNGEON!");
+        }
+    }
+
+    @EventHandler
+    public void onBlockPlace(BlockPlaceEvent e) {
+        Player p = e.getPlayer();
+        if (inDungeon.contains(p.getUniqueId())) {
+            e.setCancelled(true);
+            p.sendMessage("§c§lCAM DAT BLOCK TRONG DUNGEON!");
+        }
+    }
+
+    @EventHandler
+    public void onExplode(EntityExplodeEvent e) {
+        for (Location spawn : spawns.values()) {
+            if (spawn != null && spawn.getWorld().equals(e.getLocation().getWorld())) {
+                if (spawn.distance(e.getLocation()) < 100) {
+                    e.setCancelled(true);
+                    e.blockList().clear();
+                    return;
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onCreeperDamage(EntityDamageByEntityEvent e) {
+        if (e.getDamager() instanceof Creeper) {
+            for (Location spawn : spawns.values()) {
+                if (spawn != null && spawn.getWorld().equals(e.getEntity().getWorld())) {
+                    if (spawn.distance(e.getEntity().getLocation()) < 100) {
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onWitherBreakBlock(EntityChangeBlockEvent e) {
+        if (e.getEntityType() == EntityType.WITHER || e.getEntityType() == EntityType.WITHER_SKULL) {
+            e.setCancelled(true);
+            return;
+        }
+        if (e.getEntityType() == EntityType.ENDERMAN) {
+            for (Location spawn : spawns.values()) {
+                if (spawn != null && spawn.getWorld().equals(e.getBlock().getWorld())) {
+                    if (spawn.distance(e.getBlock().getLocation()) < 100) {
+                        e.setCancelled(true);
+                        return;
+                    }
+                }
+            }
+        }
+        if (e.getEntity() instanceof Mob) {
+            for (Location spawn : spawns.values()) {
+                if (spawn != null && spawn.getWorld().equals(e.getBlock().getWorld())) {
+                    if (spawn.distance(e.getBlock().getLocation()) < 100) {
+                        e.setCancelled(true);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
     @EventHandler public void onQuit(PlayerQuitEvent e){ inDungeon.remove(e.getPlayer().getUniqueId()); currentDungeon.remove(e.getPlayer().getUniqueId()); startTimes.remove(e.getPlayer().getUniqueId()); }
-      }
+        }
